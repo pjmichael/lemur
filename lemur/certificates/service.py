@@ -171,15 +171,8 @@ def mint(**kwargs):
 
     issuer = plugins.get(authority.plugin_name)
 
-    # allow the CSR to be specified by the user
-    if not kwargs.get('csr'):
-        csr, private_key = create_csr(**kwargs)
-    else:
-        csr = str(kwargs.get('csr'))
-        private_key = None
-
-    cert_body, cert_chain = issuer.create_certificate(csr, kwargs)
-    return cert_body, private_key, cert_chain,
+    cert_body, cert_chain = issuer.create_certificate(kwargs.get('csr'), kwargs)
+    return cert_body, cert_chain
 
 
 def import_certificate(**kwargs):
@@ -229,7 +222,15 @@ def create(**kwargs):
     """
     Creates a new certificate.
     """
-    cert_body, private_key, cert_chain = mint(**kwargs)
+    # allow the CSR to be specified by the user
+    if not kwargs.get('csr'):
+        csr, private_key = create_csr(**kwargs)
+    else:
+        csr = str(kwargs.get('csr'))
+        private_key = None
+
+    kwargs['csr'] = csr
+    cert_body, cert_chain = mint(**kwargs)
     kwargs['body'] = cert_body
     kwargs['private_key'] = private_key
     kwargs['chain'] = cert_chain

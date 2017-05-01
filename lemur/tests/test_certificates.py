@@ -278,7 +278,7 @@ def test_get_account_number(client):
 
 def test_mint_certificate(issuer_plugin, authority):
     from lemur.certificates.service import mint
-    cert_body, private_key, chain = mint(authority=authority, csr=CSR_STR)
+    cert_body, chain = mint(authority=authority, csr=CSR_STR)
     assert cert_body == INTERNAL_VALID_LONG_STR, INTERNAL_VALID_SAN_STR
 
 
@@ -288,10 +288,22 @@ def test_create_certificate(issuer_plugin, authority, user):
     assert str(cert.not_after) == '2040-01-01T20:30:52+00:00'
     assert str(cert.not_before) == '2015-06-26T20:30:52+00:00'
     assert cert.issuer == 'Example'
-    assert cert.name == 'long.lived.com-Example-20150626-20400101'
+    assert cert.name.startswith('long.lived.com-Example-20150626-20400101')
+    assert cert.private_key is None
 
     cert = create(authority=authority, csr=CSR_STR, owner='joe@example.com', name='ACustomName1', creator=user['user'])
     assert cert.name == 'ACustomName1'
+
+
+def test_create_certificate_when_no_csr_provided(issuer_plugin, authority, user):
+    from lemur.certificates.service import create
+    cert = create(authority=authority, owner='joe@example.com', creator=user['user'], key_type='RSA2048', common_name='example.com')
+    assert str(cert.not_after) == '2040-01-01T20:30:52+00:00'
+    assert str(cert.not_before) == '2015-06-26T20:30:52+00:00'
+    assert cert.issuer == 'Example'
+    assert cert.name.startswith('long.lived.com-Example-20150626-20400101')
+    assert cert.private_key.startswith("-----BEGIN RSA PRIVATE KEY-----")
+    assert cert.private_key.endswith("-----END RSA PRIVATE KEY-----")
 
 
 def test_reissue_certificate(issuer_plugin, authority, certificate):
@@ -321,7 +333,7 @@ def test_import(user):
     assert str(cert.not_after) == '2040-01-01T20:30:52+00:00'
     assert str(cert.not_before) == '2015-06-26T20:30:52+00:00'
     assert cert.issuer == 'Example'
-    assert cert.name == 'long.lived.com-Example-20150626-20400101-2'
+    assert cert.name.startswith('long.lived.com-Example-20150626-20400101')
 
     cert = import_certificate(body=INTERNAL_VALID_LONG_STR, chain=INTERNAL_VALID_SAN_STR, private_key=PRIVATE_KEY_STR, owner='joe@example.com', name='ACustomName2', creator=user['user'])
     assert cert.name == 'ACustomName2'
@@ -333,7 +345,7 @@ def test_upload(user):
     assert str(cert.not_after) == '2040-01-01T20:30:52+00:00'
     assert str(cert.not_before) == '2015-06-26T20:30:52+00:00'
     assert cert.issuer == 'Example'
-    assert cert.name == 'long.lived.com-Example-20150626-20400101-3'
+    assert cert.name.startswith('long.lived.com-Example-20150626-20400101')
 
     cert = upload(body=INTERNAL_VALID_LONG_STR, chain=INTERNAL_VALID_SAN_STR, private_key=PRIVATE_KEY_STR, owner='joe@example.com', name='ACustomName', creator=user['user'])
     assert 'ACustomName' in cert.name
