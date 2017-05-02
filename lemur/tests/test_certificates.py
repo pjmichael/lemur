@@ -283,13 +283,25 @@ def test_mint_certificate(issuer_plugin, authority):
 
 
 def test_create_certificate(issuer_plugin, authority, user):
+    from lemur.roles.models import Role
     from lemur.certificates.service import create
-    cert = create(authority=authority, csr=CSR_STR, owner='joe@example.com', creator=user['user'])
+    cert = create(authority=authority, csr=CSR_STR, owner='joe@example.com', creator=user['user'], private_key='BLAH')
     assert str(cert.not_after) == '2040-01-01T20:30:52+00:00'
     assert str(cert.not_before) == '2015-06-26T20:30:52+00:00'
     assert cert.issuer == 'Example'
     assert cert.name.startswith('long.lived.com-Example-20150626-20400101')
     assert cert.private_key is None
+
+    assert cert.cn == 'long.lived.com'
+    assert cert.san is None
+    assert cert.name == 'long.lived.com-Example-20150626-20400101'
+    assert cert.owner == 'joe@example.com'
+    assert cert.body == INTERNAL_VALID_LONG_STR.strip()
+    assert cert.chain == INTERNAL_VALID_SAN_STR.strip()
+    assert cert.notify is True
+    assert cert.destinations == []
+    assert len(cert.roles) == 1
+    assert cert.roles[0].name == 'joe@example.com'
 
     cert = create(authority=authority, csr=CSR_STR, owner='joe@example.com', name='ACustomName1', creator=user['user'])
     assert cert.name == 'ACustomName1'
